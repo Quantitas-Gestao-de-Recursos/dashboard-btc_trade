@@ -1,0 +1,18 @@
+{
+    "pos_rv": [
+        "\\Publico - Documentos\\gerenciais\\POS_RV COMPLETO",
+        "POS_RV_COMPLETO_DATE.xlsx"
+    ],
+    "imbarq_liquidacoes": [
+        "\\Publico - Documentos\\Arquivos Imbarq\\Processados\\02_Posicao_do_mercado_a_vista",
+        "02_Posicao_do_mercado_a_vista_DATE.csv"
+    ],
+    "imbarq_alugueis": [
+        "\\Publico - Documentos\\Arquivos Imbarq\\Processados\\06_Posicoes_de_aluguel_de_ativos",
+        "06_Posicoes_de_aluguel_de_ativos_DATE.csv"
+    ],
+    "btc_b3": [
+        "\\Gestao de Recursos - Documentos\\Operacional Mesa\\Alugueis\\dados_b3",
+        "BTC_B3_DATE.csv"
+    ]
+}
