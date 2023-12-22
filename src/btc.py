@@ -26,15 +26,21 @@ table_styles = [dict(selector='td', props=[('text-align', 'center')]),
 # ------------------------------------Código velho, refatorar DAQUI PRA BAIXO ---------------
 
 def avg_taxDay(ticker, date=dm().previous_business_day(dt.today())):
-
     qry_result = st.session_state['btc_b3'].query('TckrSymb == @ticker')
-    # qry_result['DnrAvrgRate'] = qry_result['DnrAvrgRate'].apply(lambda text: float(text.rstrip('%').replace(',', '.')) if text.endswith('%') else text).astype(float)
-    qry_result['DnrAvrgRate'] = qry_result['DnrAvrgRate'].str.replace(
-        ',', '.').str.rstrip('%').astype(float)
 
-    if sum(qry_result['QtyShrDay']) != 0:
-        return round((sum(qry_result['QtyShrDay']*qry_result['DnrAvrgRate']))/sum(qry_result['QtyShrDay']), 2)
-    return 0
+    # Arquivo tipo 1
+
+    if 'averageRate' in qry_result.columns:
+        return 0 if qry_result['averageRate'].empty else qry_result['averageRate'].values[0]
+    else:
+
+        # Arquivo tipo 2
+        qry_result['DnrAvrgRate'] = qry_result['DnrAvrgRate'].str.replace(
+            ',', '.').str.rstrip('%').astype(float)
+
+        if sum(qry_result['QtyShrDay']) != 0:
+            return round((sum(qry_result['QtyShrDay']*qry_result['DnrAvrgRate']))/sum(qry_result['QtyShrDay']), 2)
+        return 0
 
 
 def avg_lentTax(ticker, fund_alias):
@@ -183,11 +189,12 @@ def construct_listaPorFundo():
 @st.cache_data
 def load_distribuicao():
     merged_df = pd.DataFrame()
-    
+
     for fund_alias in fundos:
         merged_df = construct_listaDoadoras(fund_alias) if merged_df.empty else pd.concat([
             merged_df, construct_listaDoadoras(fund_alias)])
     return merged_df
+
 
 @st.cache_data
 def construct_listaConcatenada(df):
