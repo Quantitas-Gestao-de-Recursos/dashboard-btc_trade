@@ -180,8 +180,8 @@ def construct_listaPorFundo():
     distrib_df = merged_df.copy()
     distrib_df = pd.pivot_table(
         merged_df, index='Papel', columns='Fundo', values='Quantidade Limite', fill_value=0)
-    distrib_df = distrib_df[['FIM MASTER',
-                             'FIM CAPRI PREV', 'QUANTITAS FIA MONTECRISTO']]
+    # distrib_df = distrib_df[['FIM MASTER',
+    #                          'FIM CAPRI PREV', 'QUANTITAS FIA MONTECRISTO']]
 
     return distrib_df
 

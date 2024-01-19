@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+src/__pycache__/btc.cpython-39.pyc
+src/__pycache__/btc.cpython-311.pyc
+src/__pycache__/datareader.cpython-39.pyc
+src/__pycache__/datareader.cpython-311.pyc
+utils/__pycache__/utils.cpython-39.pyc
+utils/__pycache__/utils.cpython-311.pyc

@@ -82,7 +82,7 @@ class DataReader:
                 target_file_name=self.data_filename,
                 sheet_name=self.data_sheetname
             )
-            
+
             # Se não for xlsx, é csv
             if not self.data_filename.endswith('.xlsx'):
                 data = pd.read_csv(data, encoding='latin-1', sep=";")
@@ -101,8 +101,8 @@ class DataReader:
         df = data
 
         if 'pos_rv' in self.data_alias:
-            df = df.drop(columns=['ESTRATÉGIA MICRO']).rename(
-                columns={'ATIVO': 'Ticker', 'FUNDO': 'Fundo', 'ESTRATÉGIA MACRO': 'Estrategia', 'QTDE': 'Qtd'})
+            df = df.drop(columns=['ESTRATÉGIA MACRO']).rename(
+                columns={'ATIVO': 'Ticker', 'FUNDO': 'Fundo', 'ESTRATÉGIA MICRO': 'Estrategia', 'QTDE': 'Qtd'})
             df.columns = [
                 c.replace(' ', '_') for c in df.columns]
             df['Fundo'] = df['Fundo'].str.upper()
