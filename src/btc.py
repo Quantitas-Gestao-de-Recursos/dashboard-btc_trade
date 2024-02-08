@@ -7,13 +7,17 @@ import pandas as pd
 import warnings
 from utils.utils import *
 
+
 warnings.filterwarnings('ignore')
 
 estrategias_validas = ['RV_RB', 'RV_CARRY', 'RV_LM',
                        'RV_MG', 'RV_JP', 'RV_IC', 'CARTEIRARV']
 
+quant = ['QUANT_PR']
+
 nao_doados = ['15', '14', '13', '12', '17', '18', '25',
-              '30', '16', '08', '23', '20', '86', '94', '35']
+              '30', '16', '08', '23', '20', '86', '94',
+              '35', '27', '22', '28']
 
 fundos = {'FIM MASTER': 698878, 'FIM CAPRI PREV': 1583876,
           'QUANTITAS FIA MONTECRISTO': 783621}
@@ -83,7 +87,7 @@ def get_liqQtds(ticker, fund_alias, day=0):
     return qry_result['Net'].sum()
 
 
-def get_strategiesTickerList(fund_alias, d='d1'):
+def get_strategiesTickerList(fund_alias, d='d1', estrategias_validas=estrategias_validas):
     d = 'pos_rv_' + d
     df = st.session_state[d][st.session_state[d]
                              ['Estrategia'].isin(estrategias_validas)]
@@ -93,7 +97,7 @@ def get_strategiesTickerList(fund_alias, d='d1'):
     return list(fund_position[(fund_position['Ticker'].astype(str).str.len() <= 5) | (~fund_position['Ticker'].str[-2:].isin(nao_doados))]['Ticker'])
 
 
-def get_strategiesTickerQtds(ticker, d, fund_alias):
+def get_strategiesTickerQtds(ticker, d, fund_alias, estrategias_validas=estrategias_validas):
     d = 'pos_rv_' + d
     df = st.session_state[d][st.session_state[d]
                              ['Estrategia'].isin(estrategias_validas)]
@@ -103,6 +107,14 @@ def get_strategiesTickerQtds(ticker, d, fund_alias):
     qry_result = fund_position[(fund_position['Ticker'].astype(str).str.len() <= 5) | (
         ~fund_position['Ticker'].str[-2:].isin(nao_doados))].query("Ticker == @ticker")
     qtd = 0 if qry_result.empty else qry_result['Qtd'].item()
+    return qtd
+
+
+def get_quantPrQtd(ticker, df):
+
+    qry_result = df.query("Ticker == @ticker")
+    df_sum = qry_result.groupby('Ticker').sum().reset_index()
+    qtd = 0 if df_sum.empty else df_sum['Quantidade'].item()
     return qtd
 
 
@@ -216,3 +228,153 @@ def construct_listaConcatenada(df):
         lambda x: str(x).replace('.', ','))
 
     return merged_df
+
+
+@st.cache_data
+def get_calendarList():
+    HOLD_DAYS = 20
+    DIR = rf"C:\Users\vinicius.trevelin\QUANTITAS\Publico - Documentos\Joao Pedro Oliveira\MOVIMENTACOES-BOVESPA"
+
+    try:
+        last_operation_days = dm().list_business(dt(2024, 1, 1), dm(
+        ).previous_business_day(dt.today()))[-HOLD_DAYS:]
+
+        movs = {}
+
+        for day in last_operation_days:
+
+            date = day.strftime("%Y%m%d")
+            df = pd.read_excel(DIR + rf"\MOV{date}.xlsx")
+            df = df[['Papel', 'Tipo de operação', 'Quantidade', 'Estratégia  1']]
+            df['Tipo de operação'] = df['Tipo de operação'].replace(
+                {'V': 'C', 'C': 'V'})
+            df = df[df['Tipo de operação'] == 'V']
+            df = df.rename(
+                columns={'Tipo de operação': 'Lado', 'Papel': 'Ticker'})
+            movs[dm().next_business_day(day, HOLD_DAYS-1)
+                 ] = df[df['Estratégia  1'] == 'QUANT_PR']
+
+        return movs
+    except Exception as e:
+
+        st.error(f"Data de liquidação inválida. Erro:{e}")
+        return pd.DataFrame()
+
+
+@st.cache_data
+def get_liquidationList(date_verify, calendar=False):
+    DELTA_LIQ = 2
+    LIQ_DOADOR = 4
+    HOLD_DAYS = 19
+    DIR = rf"C:\Users\vinicius.trevelin\QUANTITAS\Publico - Documentos\Joao Pedro Oliveira\MOVIMENTACOES-BOVESPA"
+
+    try:
+        last_operation_days = dm().list_business(dt(2024, 1, 1), dm(
+        ).previous_business_day(dt.today(), DELTA_LIQ-1))[-HOLD_DAYS:]
+
+        movs = {}
+
+        for day in last_operation_days:
+
+            date = day.strftime("%Y%m%d")
+            df = pd.read_excel(DIR + rf"\MOV{date}.xlsx")
+            df = df[['Papel', 'Tipo de operação', 'Quantidade', 'Estratégia  1']]
+            df['Tipo de operação'] = df['Tipo de operação'].replace(
+                {'V': 'C', 'C': 'V'})
+            df = df[df['Tipo de operação'] == 'V']
+            df = df.rename(
+                columns={'Tipo de operação': 'Lado', 'Papel': 'Ticker'})
+            movs[dm().next_business_day(day, HOLD_DAYS-LIQ_DOADOR)
+                 ] = df[df['Estratégia  1'] == 'QUANT_PR']
+
+        if calendar:
+            return movs
+
+        return movs[date_verify][['Ticker', 'Lado', 'Quantidade']]
+
+    except Exception as e:
+
+        st.error(f"Data de liquidação inválida. Erro:{e}")
+        return pd.DataFrame()
+
+
+def add_if_negative_quant(row):
+    d_0 = row['Total D-1']
+    d1 = row['D+1'] if row['D+1'] < 0 else 0
+    d2 = row['D+2'] if row['D+2'] < 0 else 0
+    d3 = row['D+3'] if row['D+3'] < 0 else 0
+    d4 = row['D+4'] if row['D+4'] < 0 else 0
+    return d_0 + d1 + d2 + d3 + d4
+
+
+@st.cache_data
+def construct_controleDfQuant(fund_alias):
+    """
+    Constrói um DataFrame contendo informações sobre as estratégias de negociação de um fundo específico.
+
+    Parâmetros:
+    - fund_alias (str): O alias do fundo.
+
+    Retorna:
+    - df (pandas.DataFrame): O DataFrame contendo as informações das estratégias de negociação.
+    """
+    df = pd.DataFrame({'Ticker': get_strategiesTickerList(
+        fund_alias, d='d1', estrategias_validas=quant)})
+    df['Total D-1'] = df['Ticker'].apply(
+        lambda x: get_strategiesTickerQtds(x, 'd2', fund_alias, estrategias_validas=quant))
+    df['Liq D1'] = df['Ticker'].apply(lambda x: get_liqQtds(x, fund_alias, 1))
+    df['Total D0'] = df['Ticker'].apply(
+        lambda x: get_strategiesTickerQtds(x, 'd1', fund_alias, estrategias_validas=quant))
+
+    calendar_list = list(get_calendarList().values())
+    print(calendar_list[3])
+
+    df['D+1'] = df['Ticker'].apply(
+        lambda x: get_quantPrQtd(x, calendar_list[0])*-1)
+    df['D+2'] = df['Ticker'].apply(
+        lambda x: get_quantPrQtd(x, calendar_list[1])*-1)
+    df['D+3'] = df['Ticker'].apply(
+        lambda x: get_quantPrQtd(x, calendar_list[2])*-1)
+    df['D+4'] = df['Ticker'].apply(
+        lambda x: get_quantPrQtd(x, calendar_list[3])*-1)
+
+    df['Total Livre D+4'] = df.apply(add_if_negative_quant, axis=1)
+
+    another_df = get_liquidationList(dt.today())
+    df = pd.merge(df, another_df, on='Ticker', how='left')
+    df.rename(
+        columns={'Quantidade': f'Liquidar {dt.today().strftime("%d/%m")}'}, inplace=True)
+    df.drop(columns={'Lado'}, inplace=True)
+    df = df.fillna(0)
+
+    df['Doadas'] = df['Ticker'].apply(lambda x: lentQtds(x, fund_alias))
+    df['Doar D0'] = df['Total Livre D+4'] - df['Doadas']
+    df['Doar D0'] = df['Doar D0'].astype(int)
+    df['% Doadas'] = (round(df['Doadas']/df['Total Livre D+4'], 4)*100)
+    # df['Vencendo'] = df['Ticker'].apply(lambda x: expiringQtds(x, fund_alias))
+
+    df['Taxa Média Doadas'] = df['Ticker'].apply(
+        lambda x: avg_lentTax(x, fund_alias))
+    df['Taxa Média Mercado'] = df['Ticker'].apply(
+        lambda x: avg_taxDay(x, fund_alias))
+    df['Taxa Média Mercado'] = df['Taxa Média Mercado'].astype(float)
+
+    return df.reset_index(drop=True)
+
+
+@st.cache_data
+def construct_listaDoadorasQuant(df_quant, min_tax=0.5, broker_input=1):
+
+    df = df_quant[df_quant['Taxa Média Mercado'] >= min_tax]
+    df = df[['Ticker', 'Doar D0', 'Taxa Média Mercado']].rename(
+        columns={'Ticker': 'Papel', 'Taxa Média Mercado': 'Taxa', 'Doar D0': 'Quantidade Limite'})
+    df['Quantidade Limite'] = df['Quantidade Limite'].apply(
+        lambda x: floor((x/broker_input)/1000) * 1000)
+    df = df[df['Quantidade Limite'] >= 1000].sort_values(
+        by=['Taxa'], ascending=False)
+    df['Lado'] = 'Doador'
+    df['Fundo'] = 'FIM MASTER'
+    df = df[['Lado', 'Papel', 'Quantidade Limite', 'Fundo', 'Taxa']]
+    df['Taxa'] = df['Taxa'].round(2)
+
+    return df
