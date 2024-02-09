@@ -330,22 +330,15 @@ def construct_controleDfQuant(fund_alias):
     print(calendar_list[3])
 
     df['D+1'] = df['Ticker'].apply(
-        lambda x: get_quantPrQtd(x, calendar_list[0])*-1)
-    df['D+2'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[1])*-1)
-    df['D+3'] = df['Ticker'].apply(
+    df['D+2'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[2])*-1)
-    df['D+4'] = df['Ticker'].apply(
+    df['D+3'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[3])*-1)
+    df['D+4'] = df['Ticker'].apply(
+        lambda x: get_quantPrQtd(x, calendar_list[4])*-1)
 
     df['Total Livre D+4'] = df.apply(add_if_negative_quant, axis=1)
-
-    another_df = get_liquidationList(dt.today())
-    df = pd.merge(df, another_df, on='Ticker', how='left')
-    df.rename(
-        columns={'Quantidade': f'Liquidar {dt.today().strftime("%d/%m")}'}, inplace=True)
-    df.drop(columns={'Lado'}, inplace=True)
-    df = df.fillna(0)
 
     df['Doadas'] = df['Ticker'].apply(lambda x: lentQtds(x, fund_alias))
     df['Doar D0'] = df['Total Livre D+4'] - df['Doadas']

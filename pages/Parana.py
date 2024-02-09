@@ -38,7 +38,12 @@ def build_screen():
     try:
 
         df_quant = construct_controleDfQuant(st.session_state['fund_alias'])
-        df_liquidacao = get_liquidationList(verify_date)
+        df_quant = df_quant[~df_quant['Ticker'].isin(
+                ['RRRP3', 'SMAL11'])]
+        df_liquidacao = df_quant[['Ticker', 'Doar D0']].copy()
+        df_liquidacao.rename(columns={'Doar D0': 'Liquidar D0'}, inplace=True)
+        df_liquidacao = df_liquidacao[df_liquidacao['Liquidar D0'] < 0]
+        
         doadoras_quant = construct_listaDoadorasQuant(df_quant, broker_input=2)
 
         if not df_quant.empty:
