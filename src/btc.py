@@ -300,11 +300,12 @@ def get_liquidationList(date_verify, calendar=False):
 
 def add_if_negative_quant(row):
     d_0 = row['Total D0']
+    d0 = row['D0'] if row['D0'] < 0 else 0
     d1 = row['D+1'] if row['D+1'] < 0 else 0
     d2 = row['D+2'] if row['D+2'] < 0 else 0
     d3 = row['D+3'] if row['D+3'] < 0 else 0
     d4 = row['D+4'] if row['D+4'] < 0 else 0
-    return d_0 + d1 + d2 + d3 + d4
+    return d_0 + d0 + d1 + d2 + d3 + d4
 
 
 @st.cache_data
@@ -320,22 +321,24 @@ def construct_controleDfQuant(fund_alias):
     """
     df = pd.DataFrame({'Ticker': get_strategiesTickerList(
         fund_alias, d='d1', estrategias_validas=quant)})
-    df['Total D-1'] = df['Ticker'].apply(
-        lambda x: get_strategiesTickerQtds(x, 'd2', fund_alias, estrategias_validas=quant))
-    df['Liq D1'] = df['Ticker'].apply(lambda x: get_liqQtds(x, fund_alias, 1))
+    # df['Total D-1'] = df['Ticker'].apply(
+    #     lambda x: get_strategiesTickerQtds(x, 'd2', fund_alias, estrategias_validas=quant))
+    # df['Liq D1'] = df['Ticker'].apply(lambda x: get_liqQtds(x, fund_alias, 1))
     df['Total D0'] = df['Ticker'].apply(
         lambda x: get_strategiesTickerQtds(x, 'd1', fund_alias, estrategias_validas=quant))
 
     calendar_list = list(get_calendarList().values())
 
-    df['D+1'] = df['Ticker'].apply(
+    df['D0'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[1])*-1)
-    df['D+2'] = df['Ticker'].apply(
+    df['D+1'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[2])*-1)
-    df['D+3'] = df['Ticker'].apply(
+    df['D+2'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[3])*-1)
-    df['D+4'] = df['Ticker'].apply(
+    df['D+3'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[4])*-1)
+    df['D+4'] = df['Ticker'].apply(
+        lambda x: get_quantPrQtd(x, calendar_list[5])*-1)
 
     df['Total Livre D+4'] = df.apply(add_if_negative_quant, axis=1)
 
