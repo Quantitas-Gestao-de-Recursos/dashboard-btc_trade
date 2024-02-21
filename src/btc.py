@@ -299,7 +299,11 @@ def get_liquidationList(date_verify, calendar=False):
 
 
 def add_if_negative_quant(row):
-    d_0 = row['Total D0']
+    # d_0 to receive minimum value between row['Total D0'] and row['Total D-1']
+
+    if row['Total D0'] > 0 and row['Total D-1'] is 0:
+        return 0
+    d_0 = min(row['Total D0'], row['Total D-1'])
     d0 = row['D0'] if row['D0'] < 0 else 0
     d1 = row['D+1'] if row['D+1'] < 0 else 0
     d2 = row['D+2'] if row['D+2'] < 0 else 0
@@ -321,9 +325,9 @@ def construct_controleDfQuant(fund_alias):
     """
     df = pd.DataFrame({'Ticker': get_strategiesTickerList(
         fund_alias, d='d1', estrategias_validas=quant)})
-    # df['Total D-1'] = df['Ticker'].apply(
-    #     lambda x: get_strategiesTickerQtds(x, 'd2', fund_alias, estrategias_validas=quant))
-    # df['Liq D1'] = df['Ticker'].apply(lambda x: get_liqQtds(x, fund_alias, 1))
+    df['Total D-1'] = df['Ticker'].apply(
+        lambda x: get_strategiesTickerQtds(x, 'd2', fund_alias, estrategias_validas=quant))
+    df['Liq D1'] = df['Ticker'].apply(lambda x: get_liqQtds(x, fund_alias, 1))
     df['Total D0'] = df['Ticker'].apply(
         lambda x: get_strategiesTickerQtds(x, 'd1', fund_alias, estrategias_validas=quant))
 
