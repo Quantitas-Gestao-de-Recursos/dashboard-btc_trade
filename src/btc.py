@@ -350,7 +350,7 @@ def construct_controleDfQuant(fund_alias):
     df['Liquidando'] = df['Ticker'].apply(
         lambda x: expiringQtds(x, fund_alias))
     df['Doadas Livre'] = df['Doadas'] - df['Liquidando']
-    df['Doar D0'] = df['Total Livre D+4'] - df['Doadas Livre']
+    df['Doar D0'] = df['Total Livre D+4'] - df['Doadas']
     df['Doar D0'] = df['Doar D0'].astype(int)
     df['% Doadas'] = (round(df['Doadas']/df['Total Livre D+4'], 4)*100)
 
