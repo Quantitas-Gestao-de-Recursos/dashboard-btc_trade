@@ -301,7 +301,7 @@ def get_liquidationList(date_verify, calendar=False):
 def add_if_negative_quant(row):
     # d_0 to receive minimum value between row['Total D0'] and row['Total D-1']
 
-    if row['Total D0'] > 0 and row['Total D-1'] is 0:
+    if row['Total D0'] > 0 and row['Total D-1'] == 0:
         return 0
     d_0 = min(row['Total D0'], row['Total D-1'])
     d0 = row['D0'] if row['D0'] < 0 else 0
