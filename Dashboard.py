@@ -22,7 +22,8 @@ def update_state():
 
     # gambiarra
     st.session_state['proporcoes_df'] = construct_listaPorFundo()
-    st.session_state['doadoras_df'] = construct_listaConcatenada(st.session_state['proporcoes_df'])
+    st.session_state['doadoras_df'] = construct_listaConcatenada(
+        st.session_state['proporcoes_df'])
 
 
 def build_screen():
@@ -50,21 +51,21 @@ def build_screen():
             st.subheader("Doadoras por fundo")
 
             updated_df_prop = st.data_editor(st.session_state['proporcoes_df'], height=35*len(
-                st.session_state['proporcoes_df'].index)+38, num_rows="dynamic",key='data_editor_2')
+                st.session_state['proporcoes_df'].index)+38, num_rows="dynamic", key='data_editor_2')
 
             if not st.session_state["proporcoes_df"].equals(updated_df_prop):
                 st.session_state["proporcoes_df"] = updated_df_prop.copy()
-                st.session_state["doadoras_df"] = construct_listaConcatenada(st.session_state['proporcoes_df'])
-
+                st.session_state["doadoras_df"] = construct_listaConcatenada(
+                    st.session_state['proporcoes_df'])
 
         with c2:
             st.subheader("Lista Doadora")
             updated_df_doadoras = st.data_editor(st.session_state['doadoras_df'], height=35*len(
-                st.session_state['doadoras_df'].index)+38, hide_index=True, num_rows="dynamic",key='data_editor_1')
+                st.session_state['doadoras_df'].index)+38, hide_index=True, num_rows="dynamic", key='data_editor_1')
 
             # if not st.session_state["doadoras_df"].equals(updated_df_doadoras):
-            st.button(
-                'Copy Dataframe', on_click=st.session_state['doadoras_df'].to_clipboard(index=False), key='data1')
+            # st.button(
+            #     'Copy Dataframe', on_click=st.session_state['doadoras_df'].to_clipboard(index=False), key='data1')
 
     else:
         st.info("Por favor, atualize os dados.")

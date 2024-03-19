@@ -309,7 +309,9 @@ def add_if_negative_quant(row):
     d2 = row['D+2'] if row['D+2'] < 0 else 0
     d3 = row['D+3'] if row['D+3'] < 0 else 0
     d4 = row['D+4'] if row['D+4'] < 0 else 0
-    return d_0 + d0 + d1 + d2 + d3 + d4
+    ls = row['LS'] if row['LS'] < 0 else 0
+
+    return d_0 + d0 + d1 + d2 + d3 + d4 if ls >= 0 else 0
 
 
 @st.cache_data
@@ -343,6 +345,9 @@ def construct_controleDfQuant(fund_alias):
         lambda x: get_quantPrQtd(x, calendar_list[4])*-1)
     df['D+4'] = df['Ticker'].apply(
         lambda x: get_quantPrQtd(x, calendar_list[5])*-1)
+
+    df['LS'] = df['Ticker'].apply(
+        lambda x: get_strategiesTickerQtds(x, 'd1', fund_alias, estrategias_validas=['LSFUNDAMENTO']))
 
     df['Total Livre D+4'] = df.apply(add_if_negative_quant, axis=1)
 
